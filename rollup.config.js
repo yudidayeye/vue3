@@ -113,7 +113,19 @@ function createConfig(format, output, plugins = []) {
   if (isNodeBuild) {
     output.esModule = true
   }
+  // sourcemap 配置
   output.sourcemap = !!process.env.SOURCE_MAP
+  // 修改sourcemap的路径
+  // output.sourcemapPathTransform = (relativeSourcePath, sourcemapPath) => {
+  //   console.log('---relativeSourcePath', relativeSourcePath)
+  //   console.log('===sourcemapPath', sourcemapPath)
+  //   const newSourcePath = path.join(
+  //     path.dirname(sourcemapPath),
+  //     relativeSourcePath
+  //   )
+  //   return newSourcePath
+  // }
+
   output.externalLiveBindings = false
 
   if (isGlobalBuild) {

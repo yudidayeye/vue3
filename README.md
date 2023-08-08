@@ -1,53 +1,73 @@
-# vuejs/core [![npm](https://img.shields.io/npm/v/vue.svg)](https://www.npmjs.com/package/vue) [![build status](https://github.com/vuejs/core/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vuejs/core/actions/workflows/ci.yml)
+<!--
+ * @Description:
+ * @Author: lijin
+ * @Date: 2023-07-27 13:58:10
+ * @LastEditTime: 2023-08-07 11:16:32
+ * @LastEditors:
+-->
 
-## Getting Started
+# vue3 源码调试
 
-Please follow the documentation at [vuejs.org](https://vuejs.org/)!
+> 参考:
+>
+> https://zhuanlan.zhihu.com/p/460681229;
+>
+> https://juejin.cn/book/7070324244772716556/section/7071922360592367627
 
-## Sponsors
+## 操作步骤
 
-Vue.js is an MIT-licensed open source project with its ongoing development made possible entirely by the support of these awesome [backers](https://github.com/vuejs/core/blob/main/BACKERS.md). If you'd like to join them, please consider [ sponsoring Vue's development](https://vuejs.org/sponsor/).
+- 下载源码：https://github.com/vuejs/core
+  源码采用 monorepo 的形式组织，各个模块源码和编译后代码放在 /package 对应目录下，其中运行时模块为 runtime-core
+- 构建源码: 新建 build 脚本 -- 执行 vue 构建 `pnpm` run build
 
-<p align="center">
-  <h3 align="center">Special Sponsor</h3>
-</p>
+  ```json
+  {
+    "script": {
+      "build:sourcemap": "node scripts/build.js --sourcemap -t"
+    }
+  }
+  ```
 
-<p align="center">
-  <a target="_blank" href="https://github.com/appwrite/appwrite">
-  <img alt="special sponsor appwrite" src="https://sponsors.vuejs.org/images/appwrite.svg" width="300">
-  </a>
-</p>
+  > --sourcemap 是输出 sourcemap，方便调试
+  >
+  > -t 是输出 typescript 类型声明文件，也是方便调试
 
-<p align="center">
-  <a target="_blank" href="https://vuejs.org/sponsor/#current-sponsors">
-    <img alt="sponsors" src="https://sponsors.vuejs.org/sponsors.svg?v2">
-  </a>
-</p>
+- 从脚手架创建项目：根目录新建文件夹 `demos` -- `demos` 目录下创建 vite 项目 `pnpm create vite` -- 修改 monorepo 配置 `pnpm-workspace.yaml` 如下 -- 进入 vite 项目安装依赖 `pnpm install` (由于是 monorepo 项目，pnpm 会将本地 vue 安装到 vite 项目的 node_modules 中)
+  ```yaml
+  # pnpm-workspace.yaml
+  packages:
+    - 'packages/*'
+    - 'demos/*'
+  ```
+- 项目运行调试：运行项目 `pnpm run dev` -- 创建 vscode 调试 `.vscode/launch.json` 如下 -- 开始调试（断点，查看调用堆栈） "launch Chrome"
+  ```json
+  // .vscode/launch.json
+  {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch Chrome",
+        "request": "launch",
+        "type": "chrome",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder}",
+        "runtimeArgs": ["--auto-open-devtools-for-tabs"]
+      },
+  }
+  ```
+- 修改 sourcemap 路径：发现调用堆栈的文件不可修改，定位错误 -- `rollup.config.js` 中修改 sourcemap 路径 -- 重新打包 -- 项目运行，断点调试 -- 查看调用堆栈路径
 
-## Questions
+  ```js
+  // rollup.config.js
 
-For questions and support please use [the official forum](https://forum.vuejs.org) or [community chat](https://chat.vuejs.org/). The issue list of this repo is **exclusively** for bug reports and feature requests.
-
-## Issues
-
-Please make sure to respect issue requirements and use [the new issue helper](https://new-issue.vuejs.org/) when opening an issue. Issues not conforming to the guidelines may be closed immediately.
-
-## Stay In Touch
-
-- [Twitter](https://twitter.com/vuejs)
-- [Blog](https://blog.vuejs.org/)
-- [Job Board](https://vuejobs.com/?ref=vuejs)
-
-## Contribution
-
-Please make sure to read the [Contributing Guide](https://github.com/vuejs/core/blob/main/.github/contributing.md) before making a pull request. If you have a Vue-related project/component/tool, add it with a pull request to [this curated list](https://github.com/vuejs/awesome-vue)!
-
-Thank you to all the people who already contributed to Vue!
-
-<a href="https://github.com/vuejs/core/graphs/contributors"><img src="https://opencollective.com/vuejs/contributors.svg?width=890" /></a>
-
-## License
-
-[MIT](https://opensource.org/licenses/MIT)
-
-Copyright (c) 2013-present, Yuxi (Evan) You
+  // sourcemap 配置
+  output.sourcemap = !!process.env.SOURCE_MAP
+  // 修改sourcemap的路径
+  output.sourcemapPathTransform = (relativeSourcePath, sourcemapPath) => {
+    const newSourcePath = path.join(
+      path.dirname(sourcemapPath),
+      relativeSourcePath
+    )
+    return newSourcePath
+  }
+  ```
